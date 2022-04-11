@@ -1,0 +1,32 @@
+prefix: "&9Altars &8&l| &7"
+altars:
+  messages:
+    eye-placed:
+      enabled: false
+      message: "Eye placed on %altar% by %player% remaining %count%/%max%"
+    figth-started:
+      enabled: false
+      message:
+        - "---------------------"
+        - "Successfully summoned boss %boss% the fight has started!"
+        - "---------------------"
+    fight-ended:
+      enabled: false
+      message:
+        - "---------------------"
+        - "The boss %boss% has been killed by %player%!"
+        - "---------------------"
+
+menu:
+  list:
+    title: "&9Altars list"
+    altar:
+      name: "Altar id: %id%"
+      lore:
+        - "----------------------"
+        - "In-Fight: %in-fight%"
+        - "Remaining: %remaining%/%max%"
+        - "Mobs: %mobs%"
+        - ""
+        - "Right click to teleport."
+        - "----------------------"

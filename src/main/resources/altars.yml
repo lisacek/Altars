@@ -1,0 +1,56 @@
+altars:
+  0:
+    name: "Altar of the Sun"
+    events:
+      eye-place:
+        commands: [ ]
+        sound:
+          enabled: false
+          sound: NOTE_PLING
+          volume: 1.0
+          pitch: 1.0
+      fight-start:
+        commands: [ ]
+        sound:
+          enabled: false
+          sound: ENDER_DRAGON_GROWL
+          volume: 1.0
+          pitch: 1.0
+      fight-end:
+        commands: [ ]
+        sound:
+          enabled: false
+          sound: ENDER_DRAGON_GROWL
+          volume: 1.0
+          pitch: 1.0
+    location:
+      world: world
+      x: 0
+      y: 100
+      z: 0
+    block-to-activate: COBBLESTONE
+    activated-block: BEDROCK
+    activation-item-name: "Altar Activation"
+    mobs:
+      0:
+        name: "ZEUS"
+        chance: 50
+        min: 1
+        max: 1
+        damages:
+          reward75:
+            damagePercent: 75
+            commands:
+              - xp <player> 10000
+          reward50:
+            damagePercent: 50
+            commands:
+              - xp <player> 5000
+          reward25:
+            damagePercent: 25
+            commands:
+              - xp <player> 2500
+          reward10:
+            damagePercent: 10
+            commands:
+              - xp <player> 100

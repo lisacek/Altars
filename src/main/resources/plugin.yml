@@ -1,0 +1,10 @@
+name: Altars
+version: '${project.version}'
+main: net.candorservices.lisacek.altars.Altars
+authors: [ LISACEK ]
+depend:
+  - MythicMobs
+  - WorldGuard
+commands:
+  altars:
+    description: Altars command
