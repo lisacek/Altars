@@ -36,7 +36,7 @@ public class EyePlaceEvent implements Listener {
                 ItemMeta meta = stack.getItemMeta();
                 if (event.getClickedBlock().getType() == altar.getOriginalMaterial() && altar.getActivationItem().equals(meta.getDisplayName())) {
                     if (altar.isFight()) {
-                        event.getPlayer().sendMessage(Colors.translateColors("&c&l[&6&lAltars&c&l] &c&lYou can't place an eye on this altar while it is in fight mode."));
+                        event.getPlayer().sendMessage(Colors.translateColors(plugin.getConfig().getString("prefix") + plugin.getConfig().getString("altars.messages.in-fight")));
                         event.setCancelled(true);
                         return;
                     }
@@ -47,19 +47,23 @@ public class EyePlaceEvent implements Listener {
                             MaterialData blockData = blockState.getData();
                             blockData.setData((byte) 4);
                             blockState.update(true);
-                            Bukkit.getLogger().info("[Altars] " + event.getPlayer().getName() + " placed eye on " + altar.getName());
+                        } else {
+                            event.setCancelled(true);
+                            return;
                         }
                     } else {
                         event.getClickedBlock().setType(altar.getReplaceMaterial());
                     }
                     AltarEvent altarEvent = altar.getEvents().get(EventType.ALTAR_PLACED);
+                    altar.incrementPlaced();
 
                     if (plugin.getConfig().getBoolean("altars.messages.eye-placed.enabled")) {
                         Bukkit.getOnlinePlayers().forEach(player -> {
                             player.sendMessage(Colors.translateColors(plugin.getConfig().getString("altars.messages.eye-placed.message")
-                                            .replace("%player%", event.getPlayer().getName())
-                                            .replace("%altar%", altar.getName()))
-                                    .replace("%remaining%", "" + altar.getPlaced())
+                                    .replace("%player%", event.getPlayer().getName())
+                                    .replace("%altar%", altar.getName()))
+                                    .replace("%remaining%", "" + (altar.getTotal() - altar.getPlaced()))
+                                    .replace("%placed%", "" + (altar.getPlaced()))
                                     .replace("%max%", "" + altar.getTotal())
                             );
                         });
@@ -76,7 +80,6 @@ public class EyePlaceEvent implements Listener {
                                         .replace("%player%", event.getPlayer().getName())
                                 );
                             });
-                    altar.incrementPlaced();
                     ItemStack st = event.getPlayer().getInventory().getItemInMainHand().clone();
                     st.setAmount(st.getAmount() - 1);
                     event.getPlayer().getInventory().setItemInMainHand(st);

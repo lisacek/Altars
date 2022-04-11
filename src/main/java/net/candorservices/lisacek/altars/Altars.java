@@ -1,6 +1,5 @@
 package net.candorservices.lisacek.altars;
 
-import fr.minuskube.inv.InventoryManager;
 import net.candorservices.lisacek.altars.commands.AltarCommand;
 import net.candorservices.lisacek.altars.cons.ConsoleOutput;
 import net.candorservices.lisacek.altars.enums.ConsoleColor;
@@ -27,17 +26,13 @@ public final class Altars extends JavaPlugin {
 
     private YamlConfiguration altars;
 
-
-    private InventoryManager invManager;
-
     @Override
     public void onEnable() {
         instance = this;
-        invManager = new InventoryManager(this);
         loadConfig();
         loadAltars();
         manager.loadAltars();
-        getCommand("altars").setExecutor(new AltarCommand());
+        getCommand("altars").setExecutor(new AltarCommand(this));
         getServer().getPluginManager().registerEvents(new MobDeathEvent(this), this);
         getServer().getPluginManager().registerEvents(new EyePlaceEvent(this), this);
         getServer().getPluginManager().registerEvents(new DamageEntityEvent(), this);
@@ -47,10 +42,6 @@ public final class Altars extends JavaPlugin {
     @Override
     public void onDisable() {
         console.info(ConsoleColor.GRAY + "Plugin was disabled!");
-    }
-
-    public InventoryManager getInvManager() {
-        return invManager;
     }
 
     public static Altars getInstance() {

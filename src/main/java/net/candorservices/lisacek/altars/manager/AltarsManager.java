@@ -22,6 +22,8 @@ public class AltarsManager {
 
     public void loadAltars() {
         plugin.getConsole().info(ConsoleColor.GRAY + "Loading altars...");
+        altars.clear();
+        inFight.clear();
         ConfigurationSection altarsSection = plugin.getAltars().getConfigurationSection("altars");
         altarsSection.getKeys(false).forEach(id -> {
             Altar altar = new Altar(Integer.parseInt(id), altarsSection.getConfigurationSection(id));

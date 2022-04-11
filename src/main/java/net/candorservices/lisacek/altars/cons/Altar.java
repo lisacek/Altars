@@ -83,46 +83,46 @@ public class Altar {
     }
 
     public void loadAltar() {
-        location = new Location(Bukkit.getWorld(config.getString("location.world")),
-                config.getDouble("location.x"),
-                config.getDouble("location.y"),
-                config.getDouble("location.z"));
-        originalMaterial = Material.getMaterial(config.getString("block-to-activate"));
-        replaceMaterial = Material.valueOf(config.getString("activated-block"));
-        activationItem = config.getString("activation-item-name");
-        name = config.getString("name");
+        try {
+            location = new Location(Bukkit.getWorld(config.getString("location.world")),
+                    config.getDouble("location.x"),
+                    config.getDouble("location.y"),
+                    config.getDouble("location.z"));
+            originalMaterial = Material.getMaterial(config.getString("block-to-activate"));
+            replaceMaterial = Material.valueOf(config.getString("activated-block"));
+            activationItem = config.getString("activation-item-name");
+            name = config.getString("name");
 
-        ConfigurationSection eventsSection = config.getConfigurationSection("events");
-        eventsSection.getKeys(false).forEach(eventType -> {
-            ConfigurationSection event = eventsSection.getConfigurationSection(eventType);
-            boolean sound = event.getBoolean("sound.enabled");
-            switch (eventType) {
-                case "eye-place":
-                    AltarPlacedEvent eyePlaceEvent = new AltarPlacedEvent(sound ? Sound.valueOf(event.getString("sound.sound")) : null,
-                            event.getDouble("sound.volume"), event.getDouble("sound.pitch"), event.getStringList("commands"));
-                    events.put(EventType.ALTAR_PLACED, eyePlaceEvent);
-                    Bukkit.getLogger().info("[Altars] Altar " + id + " has eye-place event");
-                    break;
-                case "fight-start":
-                    AltarFightEvent fightEvent = new AltarFightEvent(sound ? Sound.valueOf(event.getString("sound.sound")) : null,
-                            event.getDouble("sound.volume"), event.getDouble("sound.pitch"), event.getStringList("commands"));
-                    events.put(EventType.ALTAR_FIGHT, fightEvent);
-                    Bukkit.getLogger().info("[Altars] Altar " + id + " has fight-started event");
-                    break;
-                case "fight-end":
-                    AltarFightEndEvent fightEndedEvent = new AltarFightEndEvent(sound ? Sound.valueOf(event.getString("sound.sound")) : null,
-                            event.getDouble("sound.volume"), event.getDouble("sound.pitch"), event.getStringList("commands"));
-                    events.put(EventType.ALTAR_END, fightEndedEvent);
-                    Bukkit.getLogger().info("[Altars] Altar " + id + " has fight-ended event");
-                    break;
-            }
-        });
-        config.getConfigurationSection("mobs").getKeys(false).forEach(mob -> {
-            ConfigurationSection mobSection = config.getConfigurationSection("mobs." + mob);
-            AltarMob altarMob = new AltarMob(mobSection.getString("name"), mobSection.getDouble("chance"), mobSection.getInt("min"), mobSection.getInt("max"));
-            mobs.add(altarMob);
-        });
-        console.info(ConsoleColor.GRAY + "Loaded altar id: " + ConsoleColor.CYAN + id + ConsoleColor.GRAY + ".");
+            ConfigurationSection eventsSection = config.getConfigurationSection("events");
+            eventsSection.getKeys(false).forEach(eventType -> {
+                ConfigurationSection event = eventsSection.getConfigurationSection(eventType);
+                boolean sound = event.getBoolean("sound.enabled");
+                switch (eventType) {
+                    case "eye-place":
+                        AltarPlacedEvent eyePlaceEvent = new AltarPlacedEvent(sound ? Sound.valueOf(event.getString("sound.sound")) : null,
+                                event.getDouble("sound.volume"), event.getDouble("sound.pitch"), event.getStringList("commands"));
+                        events.put(EventType.ALTAR_PLACED, eyePlaceEvent);
+                        break;
+                    case "fight-start":
+                        AltarFightEvent fightEvent = new AltarFightEvent(sound ? Sound.valueOf(event.getString("sound.sound")) : null,
+                                event.getDouble("sound.volume"), event.getDouble("sound.pitch"), event.getStringList("commands"));
+                        events.put(EventType.ALTAR_FIGHT, fightEvent);
+                        break;
+                    case "fight-end":
+                        AltarFightEndEvent fightEndedEvent = new AltarFightEndEvent(sound ? Sound.valueOf(event.getString("sound.sound")) : null,
+                                event.getDouble("sound.volume"), event.getDouble("sound.pitch"), event.getStringList("commands"));
+                        events.put(EventType.ALTAR_END, fightEndedEvent);
+                        break;
+                }
+            });
+            config.getConfigurationSection("mobs").getKeys(false).forEach(mob -> {
+                ConfigurationSection mobSection = config.getConfigurationSection("mobs." + mob);
+                AltarMob altarMob = new AltarMob(mobSection.getString("name"), mobSection.getDouble("chance"), mobSection.getInt("min"), mobSection.getInt("max"));
+                mobs.add(altarMob);
+            });
+        } catch (Exception e) {
+            console.warn("&cAltar id: " + id + " has incorrect configuration!");
+        }
     }
 
 
@@ -145,25 +145,20 @@ public class Altar {
         Bukkit.getScheduler().runTaskTimerAsynchronously(Altars.getInstance(), () -> {
             Bukkit.getScheduler().runTask(Altars.getInstance(), () -> {
                 if (!isFight) {
-                    List<Block> missing = getBlocks(location.getBlock(), 5, false);
-                    List<Block> filled = getBlocks(location.getBlock(), 5, true);
-                    if (missing.size() == 0 && filled.size() > 0) {
-                        isFight = true;
-                        restore();
-                        spawnMobs();
-                        AltarEvent event = events.get(EventType.ALTAR_FIGHT);
-                        if (event.isSoundEnabled()) {
-                            location.getWorld().playSound(location, event.getSound(), (float) event.getVolume(), (float) event.getPitch());
+                    try {
+                        List<Block> missing = getBlocks(location.getBlock(), 5, false);
+                        List<Block> filled = getBlocks(location.getBlock(), 5, true);
+                        if (missing.size() == 0 && filled.size() > 0) {
+                            isFight = true;
+                            restore();
+                            spawnMobs();
+                            AltarEvent event = events.get(EventType.ALTAR_FIGHT);
+                            if (event.isSoundEnabled()) {
+                                location.getWorld().playSound(location, event.getSound(), (float) event.getVolume(), (float) event.getPitch());
+                            }
                         }
-                        if (Altars.getInstance().getConfig().getBoolean("altars.messages.figth-started.enabled")) {
-                            Bukkit.getOnlinePlayers().forEach(player -> {
-                                Colors.translateColors(Altars.getInstance().getConfig().getStringList("altars.messages.figth-started.message")).forEach(msg -> {
-                                    player.sendMessage(msg
-                                            .replace("%boss%", mobName)
-                                    );
-                                });
-                            });
-                        }
+                    } catch (Exception e) {
+                        console.warn("Altar id: " + id + " has wrong configuration!");
                     }
                 }
             });
@@ -171,28 +166,32 @@ public class Altar {
     }
 
     public void distributeRewards() {
-        Map<Player, Double> rewardPlayers = sortByComparator(damages, false);
-        Object[] players = rewardPlayers.keySet().toArray();
-        String mobIdConfig = "null";
-        for (String mob : config.getConfigurationSection("mobs").getKeys(false)) {
-            if (config.getConfigurationSection("mobs." + mob).getString("name", "null").equals(mobName)) {
-                mobIdConfig = mob;
-                break;
-            }
-        }
-
-        ConfigurationSection mobSection = config.getConfigurationSection("mobs." + mobIdConfig + ".damages");
-
-        AtomicInteger i = new AtomicInteger(0);
-        for (String key : mobSection.getKeys(false)) {
-            mobSection.getStringList(key + ".commands").forEach(cmd -> {
-                if (players.length > i.get()) {
-                    Player player = (Player) players[i.getAndIncrement()];
-                    if (player != null) {
-                        Bukkit.dispatchCommand(Bukkit.getConsoleSender(), cmd.replace("%player%", player.getName()));
-                    }
+        try {
+            Map<Player, Double> rewardPlayers = sortByComparator(damages, false);
+            Object[] players = rewardPlayers.keySet().toArray();
+            String mobIdConfig = "null";
+            for (String mob : config.getConfigurationSection("mobs").getKeys(false)) {
+                if (config.getConfigurationSection("mobs." + mob).getString("name", "null").equals(mobName)) {
+                    mobIdConfig = mob;
+                    break;
                 }
-            });
+            }
+
+            ConfigurationSection mobSection = config.getConfigurationSection("mobs." + mobIdConfig + ".damages");
+
+            AtomicInteger i = new AtomicInteger(0);
+            for (String key : mobSection.getKeys(false)) {
+                mobSection.getStringList(key + ".commands").forEach(cmd -> {
+                    if (players.length > i.get()) {
+                        Player player = (Player) players[i.getAndIncrement()];
+                        if (player != null) {
+                            Bukkit.dispatchCommand(Bukkit.getConsoleSender(), cmd.replace("%player%", player.getName()));
+                        }
+                    }
+                });
+            }
+        } catch (Exception e) {
+            console.warn("Altar id: " + id + " has wrong configuration!");
         }
     }
 
@@ -212,22 +211,36 @@ public class Altar {
         try {
             AltarMob altarMob = getRandomMob();
             int random = (int) (Math.random() * (altarMob.getMax() - altarMob.getMin())) + altarMob.getMin();
+            mobName = altarMob.getName();
             for (int i = 0; i < random; i++) {
                 Entity entity = mythicMobs.spawnMythicMob(altarMob.getName(), location);
                 mobId = entity.getEntityId();
-                mobName = altarMob.getName();
                 Altars.getInstance().getManager().getInFight().put(mobId, this);
+
+                if (Altars.getInstance().getConfig().getBoolean("altars.messages.fight-started.enabled")) {
+                    Bukkit.getOnlinePlayers().forEach(player -> {
+                        Colors.translateColors(Altars.getInstance().getConfig().getStringList("altars.messages.fight-started.message")).forEach(msg -> {
+                            player.sendMessage(msg
+                                    .replace("%boss%", entity.getCustomName())
+                            );
+                        });
+                    });
+                }
             }
         } catch (InvalidMobTypeException e) {
-            e.printStackTrace();
+            console.info(ConsoleColor.GRAY + "Invalid MythicMobs type: " + ConsoleColor.RED + mobName);
         }
     }
 
     public void restore() {
-        List<Block> filled = getBlocks(location.getBlock(), 5, true);
-        filled.forEach(block -> {
-            block.setType(originalMaterial);
-        });
+        try {
+            List<Block> filled = getBlocks(location.getBlock(), 5, true);
+            filled.forEach(block -> {
+                block.setType(originalMaterial);
+            });
+        } catch (Exception e) {
+            console.warn("Altar id: " + id + " has wrong configuration!");
+        }
     }
 
     public Location getLocation() {
