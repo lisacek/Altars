@@ -4,7 +4,7 @@ main: net.candorservices.lisacek.altars.Altars
 authors: [ LISACEK ]
 depend:
   - MythicMobs
-  - WorldGuard
+  - PlaceholderAPI
 commands:
   altars:
     description: Altars command

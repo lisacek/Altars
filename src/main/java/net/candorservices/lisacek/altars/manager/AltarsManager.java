@@ -51,6 +51,15 @@ public class AltarsManager {
         return null;
     }
 
+    public Altar getAltarById(int id) {
+        for (Altar altar : altars.values()) {
+            if (altar.getId() == id) {
+                return altar;
+            }
+        }
+        return null;
+    }
+
     public Altar getNearAltar(Player player) {
         for (Altar altar : altars.values()) {
             if (altar.getLocation().distance(player.getLocation()) < 5) {

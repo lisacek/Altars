@@ -7,6 +7,7 @@ import net.candorservices.lisacek.altars.events.DamageEntityEvent;
 import net.candorservices.lisacek.altars.events.EyePlaceEvent;
 import net.candorservices.lisacek.altars.events.mythical.MobDeathEvent;
 import net.candorservices.lisacek.altars.manager.AltarsManager;
+import net.candorservices.lisacek.altars.manager.PlaceholderManager;
 import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -36,6 +37,7 @@ public final class Altars extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new MobDeathEvent(this), this);
         getServer().getPluginManager().registerEvents(new EyePlaceEvent(this), this);
         getServer().getPluginManager().registerEvents(new DamageEntityEvent(), this);
+        new PlaceholderManager().register();
         console.info(ConsoleColor.GRAY + "Plugin was enabled!");
     }
 
@@ -86,10 +88,6 @@ public final class Altars extends JavaPlugin {
 
     public YamlConfiguration getConfig() {
         return config;
-    }
-
-    public void setConfig(YamlConfiguration config) {
-        this.config = config;
     }
 
     public YamlConfiguration getAltars() {

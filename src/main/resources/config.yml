@@ -1,19 +1,5 @@
 prefix: "&9Altars &8&l| &7"
 altars:
   messages:
-    in-fight: "&cThis altar is already in fight mode!"
-    eye-placed:
-      enabled: true
-      message: "Eye placed on %altar% by %player% remaining %placed%/%max%"
-    fight-started:
-      enabled: true
-      message:
-        - "---------------------"
-        - "Successfully summoned boss %boss%&r the fight has started!"
-        - "---------------------"
-    fight-ended:
-      enabled: true
-      message:
-        - "---------------------"
-        - "The boss %boss%&r has been killed by %player%!"
-        - "---------------------"
+    in-fight: "&cYou can't use an altar while in a fight!"
+  radius: 5

@@ -1,3 +1,18 @@
+#
+# Placeholders:
+#   events:
+#     eye-place:
+#        message: %altar% %player% %placed%/%max% (%remaining%)
+#     fight-start:
+#        message: %boss%
+#     fight-end:
+#        message: %boss% %player% %damages...%
+#                       (%reward75%) - Name of the player who has 75% of the damage
+#                       (%reward75_damage%) - Damage of the player who has 75% of the damage
+#
+#  commands: %player%
+#
+
 altars:
   0:
     name: "Altar of the Sun"
@@ -9,6 +24,9 @@ altars:
           sound: NOTE_PLING
           volume: 1.0
           pitch: 1.0
+        message:
+          enabled: true
+          message: "Eye placed on %altar% by %player% remaining %placed%/%max%"
       fight-start:
         commands: [ ]
         sound:
@@ -16,6 +34,12 @@ altars:
           sound: ENDER_DRAGON_GROWL
           volume: 1.0
           pitch: 1.0
+        message:
+          enabled: true
+          lines:
+            - "---------------------"
+            - "Successfully summoned boss %boss%&r the fight has started!"
+            - "---------------------"
       fight-end:
         commands: [ ]
         sound:
@@ -23,13 +47,21 @@ altars:
           sound: ENDER_DRAGON_GROWL
           volume: 1.0
           pitch: 1.0
+        message:
+          enabled: true
+          lines:
+            - "---------------------"
+            - "The boss %boss%&r has been killed by %player%!"
+            - "---------------------"
     location:
       world: world
       x: 0
       y: 100
       z: 0
     block-to-activate: COBBLESTONE
+    block-to-activate-data: 0
     activated-block: BEDROCK
+    activated-block-data: 0
     activation-item-name: "Altar Activation"
     mobs:
       0:
@@ -37,20 +69,25 @@ altars:
         chance: 50
         min: 1
         max: 1
+        location:
+          world: world
+          x: 0
+          y: 100
+          z: 0
         damages:
           reward75:
             damagePercent: 75
             commands:
-              - xp <player> 10000
+              - xp 10000 %player%
           reward50:
             damagePercent: 50
             commands:
-              - xp <player> 5000
+              - xp 5000 %player%
           reward25:
             damagePercent: 25
             commands:
-              - xp <player> 2500
+              - xp 2500 %player%
           reward10:
             damagePercent: 10
             commands:
-              - xp <player> 100
+              - xp 100 %player%

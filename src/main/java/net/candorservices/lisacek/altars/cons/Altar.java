@@ -1,5 +1,6 @@
 package net.candorservices.lisacek.altars.cons;
 
+import com.google.gson.JsonObject;
 import io.lumine.xikage.mythicmobs.MythicMobs;
 import io.lumine.xikage.mythicmobs.api.bukkit.BukkitAPIHelper;
 import io.lumine.xikage.mythicmobs.api.exceptions.InvalidMobTypeException;
@@ -15,10 +16,13 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.block.Block;
+import org.bukkit.block.BlockState;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
+import org.bukkit.material.MaterialData;
 
+import java.text.DecimalFormat;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -49,8 +53,10 @@ public class Altar {
     private String name;
 
     private Material originalMaterial;
+    private int originalMaterialData;
 
     private Material replaceMaterial;
+    private int replaceMaterialData;
 
     private String activationItem;
 
@@ -82,6 +88,8 @@ public class Altar {
         return damages;
     }
 
+    private static final DecimalFormat df = new DecimalFormat("#.#");
+
     public void loadAltar() {
         try {
             location = new Location(Bukkit.getWorld(config.getString("location.world")),
@@ -91,8 +99,9 @@ public class Altar {
             originalMaterial = Material.getMaterial(config.getString("block-to-activate"));
             replaceMaterial = Material.valueOf(config.getString("activated-block"));
             activationItem = config.getString("activation-item-name");
+            originalMaterialData = config.getInt("block-to-activate-data");
+            replaceMaterialData = config.getInt("activated-block-data");
             name = config.getString("name");
-
             ConfigurationSection eventsSection = config.getConfigurationSection("events");
             eventsSection.getKeys(false).forEach(eventType -> {
                 ConfigurationSection event = eventsSection.getConfigurationSection(eventType);
@@ -117,7 +126,8 @@ public class Altar {
             });
             config.getConfigurationSection("mobs").getKeys(false).forEach(mob -> {
                 ConfigurationSection mobSection = config.getConfigurationSection("mobs." + mob);
-                AltarMob altarMob = new AltarMob(mobSection.getString("name"), mobSection.getDouble("chance"), mobSection.getInt("min"), mobSection.getInt("max"));
+                Location mobLocation = new Location(Bukkit.getWorld(mobSection.getString("location.world")), mobSection.getDouble("location.x"), mobSection.getDouble("location.y"), mobSection.getDouble("location.z"));
+                AltarMob altarMob = new AltarMob(mobSection.getString("name"), mobSection.getDouble("chance"), mobLocation, mobSection.getInt("min"), mobSection.getInt("max"));
                 mobs.add(altarMob);
             });
         } catch (Exception e) {
@@ -141,13 +151,16 @@ public class Altar {
     public Player lastPlacedBy = null;
 
     public void startTask() {
-        total = getBlocks(location.getBlock(), 5, false).size();
+        int a = getBlocks(location.getBlock(), false).size();
+        int b = getBlocks(location.getBlock(), true).size();
+        total = a + b;
+        placed = b;
         Bukkit.getScheduler().runTaskTimerAsynchronously(Altars.getInstance(), () -> {
             Bukkit.getScheduler().runTask(Altars.getInstance(), () -> {
                 if (!isFight) {
                     try {
-                        List<Block> missing = getBlocks(location.getBlock(), 5, false);
-                        List<Block> filled = getBlocks(location.getBlock(), 5, true);
+                        List<Block> missing = getBlocks(location.getBlock(), false);
+                        List<Block> filled = getBlocks(location.getBlock(), true);
                         if (missing.size() == 0 && filled.size() > 0) {
                             isFight = true;
                             restore();
@@ -165,7 +178,8 @@ public class Altar {
         }, 0, 5);
     }
 
-    public void distributeRewards() {
+    public Map<String, String> distributeRewards() {
+        Map<String, String> map = new HashMap<>();
         try {
             Map<Player, Double> rewardPlayers = sortByComparator(damages, false);
             Object[] players = rewardPlayers.keySet().toArray();
@@ -181,18 +195,26 @@ public class Altar {
 
             AtomicInteger i = new AtomicInteger(0);
             for (String key : mobSection.getKeys(false)) {
+                Player player;
+                if (players.length > i.get()) {
+                    player = (Player) players[i.getAndIncrement()];
+                    map.put("%" + key.toLowerCase() + "%", player.getName());
+                    map.put("%" + key.toLowerCase() + "_damage%", "" + df.format(rewardPlayers.get(player)));
+                } else {
+                    player = null;
+                    map.put("%" + key + "%", "No one");
+                    map.put("%" + key + "_damage%", "0.0");
+                }
                 mobSection.getStringList(key + ".commands").forEach(cmd -> {
-                    if (players.length > i.get()) {
-                        Player player = (Player) players[i.getAndIncrement()];
-                        if (player != null) {
-                            Bukkit.dispatchCommand(Bukkit.getConsoleSender(), cmd.replace("%player%", player.getName()));
-                        }
+                    if (player != null) {
+                        Bukkit.dispatchCommand(Bukkit.getConsoleSender(), cmd.replace("%player%", player.getName()));
                     }
                 });
             }
         } catch (Exception e) {
             console.warn("Altar id: " + id + " has wrong configuration!");
         }
+        return map;
     }
 
     public String getName() {
@@ -201,6 +223,14 @@ public class Altar {
 
     public Player getLastPlacedBy() {
         return lastPlacedBy;
+    }
+
+    public int getOriginalMaterialData() {
+        return originalMaterialData;
+    }
+
+    public int getReplaceMaterialData() {
+        return replaceMaterialData;
     }
 
     public void setLastPlacedBy(Player player) {
@@ -213,13 +243,13 @@ public class Altar {
             int random = (int) (Math.random() * (altarMob.getMax() - altarMob.getMin())) + altarMob.getMin();
             mobName = altarMob.getName();
             for (int i = 0; i < random; i++) {
-                Entity entity = mythicMobs.spawnMythicMob(altarMob.getName(), location);
+                Entity entity = mythicMobs.spawnMythicMob(altarMob.getName(), altarMob.getLocation());
                 mobId = entity.getEntityId();
                 Altars.getInstance().getManager().getInFight().put(mobId, this);
 
-                if (Altars.getInstance().getConfig().getBoolean("altars.messages.fight-started.enabled")) {
+                if (config.getBoolean("events.fight-start.message.enabled")) {
                     Bukkit.getOnlinePlayers().forEach(player -> {
-                        Colors.translateColors(Altars.getInstance().getConfig().getStringList("altars.messages.fight-started.message")).forEach(msg -> {
+                        Colors.translateColors(config.getStringList("events.fight-start.message.lines")).forEach(msg -> {
                             player.sendMessage(msg
                                     .replace("%boss%", entity.getCustomName())
                             );
@@ -234,9 +264,13 @@ public class Altar {
 
     public void restore() {
         try {
-            List<Block> filled = getBlocks(location.getBlock(), 5, true);
+            List<Block> filled = getBlocks(location.getBlock(), true);
             filled.forEach(block -> {
                 block.setType(originalMaterial);
+                BlockState blockState =  block.getState();
+                MaterialData blockData = blockState.getData();
+                blockData.setData((byte) replaceMaterialData);
+                blockState.update(true);
             });
         } catch (Exception e) {
             console.warn("Altar id: " + id + " has wrong configuration!");
@@ -260,18 +294,21 @@ public class Altar {
     }
 
     private AltarMob getRandomMob() {
-        double p = Math.random();
-        double cumulativeProbability = 0.0;
-        for (AltarMob mob : mobs) {
-            cumulativeProbability += mob.getChance();
-            if (p <= cumulativeProbability) {
-                return mob;
+        double sum = mobs.stream().mapToDouble(AltarMob::getChance).sum();
+        double rand = Math.random() * sum;
+        AltarMob choice = null;
+        for (AltarMob e : mobs) {
+            choice = e;
+            rand -= e.getChance();
+            if (rand < 0) {
+                break;
             }
         }
-        return mobs.get(0);
+        return choice;
     }
 
-    private List<Block> getBlocks(Block start, int radius, boolean filled) {
+    private List<Block> getBlocks(Block start, boolean filled) {
+        int radius = Altars.getInstance().getConfig().getInt("altars.radius");
         if (radius < 0) {
             return new ArrayList<>(0);
         }
@@ -281,7 +318,6 @@ public class Altar {
             for (int y = -radius; y <= radius; y++) {
                 for (int z = -radius; z <= radius; z++) {
                     Block block = start.getRelative(x, y, z);
-
                     if (block.getType() == originalMaterial && !filled && block.getType() != Material.ENDER_PORTAL_FRAME) {
                         blocks.add(block);
                     }
@@ -297,10 +333,6 @@ public class Altar {
                         if (filled && data != (byte) 2) {
                             blocks.add(block);
                         }
-                    }
-
-                    if (block.getType() == replaceMaterial && filled && block.getType() != Material.ENDER_PORTAL_FRAME) {
-                        blocks.add(block);
                     }
                 }
             }
@@ -338,6 +370,14 @@ public class Altar {
 
     public void incrementPlaced() {
         placed++;
+    }
+
+    public void resetPlaced() {
+        placed = 0;
+    }
+
+    public ConfigurationSection getConfig() {
+        return config;
     }
 
 }

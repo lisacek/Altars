@@ -53,13 +53,17 @@ public class EyePlaceEvent implements Listener {
                         }
                     } else {
                         event.getClickedBlock().setType(altar.getReplaceMaterial());
+                        BlockState blockState =  event.getClickedBlock().getState();
+                        MaterialData blockData = blockState.getData();
+                        blockData.setData((byte) altar.getReplaceMaterialData());
+                        blockState.update(true);
                     }
                     AltarEvent altarEvent = altar.getEvents().get(EventType.ALTAR_PLACED);
                     altar.incrementPlaced();
 
-                    if (plugin.getConfig().getBoolean("altars.messages.eye-placed.enabled")) {
+                    if (altar.getConfig().getBoolean("events.eye-place.message.enabled")) {
                         Bukkit.getOnlinePlayers().forEach(player -> {
-                            player.sendMessage(Colors.translateColors(plugin.getConfig().getString("altars.messages.eye-placed.message")
+                            player.sendMessage(Colors.translateColors(altar.getConfig().getString("events.eye-place.message.message")
                                     .replace("%player%", event.getPlayer().getName())
                                     .replace("%altar%", altar.getName()))
                                     .replace("%remaining%", "" + (altar.getTotal() - altar.getPlaced()))
